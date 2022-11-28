@@ -1,0 +1,166 @@
+Create Database PickARide;
+Use PickARide;
+
+
+CREATE TABLE USERLOGIN
+(
+	SerialNo int PRIMARY KEY,
+	UserName varchar(20) NOT NULL,
+	Password varchar (20) NOT NULL
+)
+
+INSERT INTO USERLOGIN
+VALUES (1,'Piku','database'),
+	   (2,'Mumu','database'),
+	   (3,'Sufi','database'),
+	   (4,'Jawad','database')
+
+
+SELECT* FROM USERLOGIN
+
+CREATE TABLE CUSTOMER
+(
+	CustomerId varchar(20) PRIMARY KEY,
+	CustomerName varchar(50) NOT NULL,
+	PresentAddress varchar(300) NOT NULL,
+	PermanentAddress varchar(300) NOT NULL,
+	C_NID_No varchar(20) NOT NULL,
+	C_EmailAddress varchar(40) NOT NULL,
+	C_PassportNo varchar(20)  NULL  DEFAULT  'Null',
+	C_Phone varchar(11) NOT NULL
+)
+
+
+
+INSERT INTO CUSTOMER 
+VALUES('C01','Sabrina Mumu','Chittagong',
+'Dhaka','2884756338956','sabrinamumu6789@gmail.com', 
+'31195855','01912584949')
+
+SELECT* FROM CUSTOMER
+
+
+
+CREATE TABLE BIKE
+(
+	BikeId varchar(20) PRIMARY KEY,
+	CustomerId varchar (20) NOT NULL FOREIGN KEY REFERENCES CUSTOMER (CustomerId),
+	ModelNo varchar(200) NOT NULL,
+	LicenseNo varchar (200) NOT NULL,
+	Engine varchar(200) NOT NULL,
+	OnRent varchar(100) NOT NULL,
+	AvailableFrom varchar (50) NOT NULL,
+	AvailableTill varchar (50) NOT NULL
+) 
+
+INSERT INTO BIKE
+VALUES('B01', 'KA 04 JQ 5657', 'NK45637893C0007','VC10338','Yes', '7 PM', '12PM') 
+
+SELECT* FROM BIKE
+
+ALTER TABLE [PickARide].[dbo].[BIKE]
+DROP CONSTRAINT CustomerId;
+
+
+CREATE TABLE PARTNER
+(
+	PartnerId varchar (20) PRIMARY KEY,
+	BikeId varchar (20) NOT NULL FOREIGN KEY REFERENCES BIKE (BikeId),
+	CustomerId varchar (20) NOT NULL FOREIGN KEY REFERENCES CUSTOMER (CustomerId),
+	PartnerName varchar(50) NOT NULL,
+	P_NID_No varchar (20) NOT NULL,
+	P_EmailAddress varchar(40)NOT NULL,
+	P_Phone varchar(11) NOT NULL,
+	P_RentingHours varchar (50) NOT NULL
+)
+
+INSERT INTO PARTNER 
+VALUES(1,'B01','C01','Arifur Rahman Jawad',36773899936,'freakarj@gmail.com','01748993452', '4 hours')
+
+SELECT* FROM PARTNER
+
+CREATE TABLE RENT
+(
+	RentSerialNo varchar(30) PRIMARY KEY,
+	BikeId varchar (20) NOT NULL FOREIGN KEY REFERENCES BIKE (BikeId),
+	CustomerId varchar (20) NOT NULL FOREIGN KEY REFERENCES CUSTOMER (CustomerId),
+	PaymentDate varchar(100) NOT NULL,
+	PaymentTime varchar (100) NOT NULL,
+	BikeRentingHours varchar (20) NOT NULL,
+	PaymentType varchar (20) NOT NULL
+) 
+
+INSERT INTO RENT
+VALUES('RE01','B01','C01', '2021-02-16', '01:02 PM', '2 hours', 'Cash' )
+
+SELECT* FROM RENT
+
+CREATE TABLE MAIN_FINANCE 
+(
+	FinSerialNo varchar (30) PRIMARY KEY,
+	RentSerialNo varchar(30) NOT NULL FOREIGN KEY REFERENCES RENT (RentSerialNo),
+	BikeId varchar(20) NOT NULL FOREIGN KEY REFERENCES BIKE (BikeId),
+	CustomerId varchar (20) NOT NULL FOREIGN KEY REFERENCES CUSTOMER (CustomerId),
+	Price varchar (20) NOT NULL,
+	ReceivedAmount varchar (20) NOT NULL,
+	DueAmount varchar (20) NOT NULL
+)
+
+INSERT INTO MAIN_FINANCE 
+VALUES ('MFN01','RE01','B01','C01', '3000 tk', '3000 tk', '0 tk')
+
+SELECT* FROM MAIN_FINANCE
+
+CREATE TABLE PARTNER_FINANCE
+(
+	PFinSerialNo varchar(30) PRIMARY KEY,
+	PartnerId varchar (20) NOT NULL FOREIGN KEY REFERENCES PARTNER (PartnerId),
+	FinSerialNo varchar (30) NOT NULL FOREIGN KEY REFERENCES MAIN_FINANCE (FinSerialNo),
+	P_Receiveable varchar (20) NOT NULL,
+	PaidToPartner varchar (20) NOT NULL,
+	PartnerDue varchar (20) NOT NULL,
+	ParnterFine varchar (20) NULL DEFAULT '0 tk'
+)
+
+INSERT INTO PARTNER_FINANCE
+VALUES ('PFSN01',1,'MFN01', '2000 tk', '0 tk', '2000 tk','0 tk')
+
+SELECT* FROM PARTNER_FINANCE
+
+CREATE TABLE BIKE_FINANCE
+(
+	BFinSerialNo varchar(30) PRIMARY KEY,
+	BikeId varchar (20) NOT NULL FOREIGN KEY REFERENCES BIKE (BikeId),
+	FinSerialNo varchar (30) NOT NULL FOREIGN KEY REFERENCES MAIN_FINANCE (FinSerialNo),
+	EngineCost varchar (20) NULL,
+	FuelCost varchar (20) NULL,
+	TierCost  varchar (20) NULL,
+	TotalCost  varchar (20) NOT NULL
+)
+
+INSERT INTO BIKE_FINANCE
+VALUES ('BFSN01','B01','MFN01', '1000 tk', '500 tk', '0 tk', '1500 tk')
+
+SELECT* FROM BIKE_FINANCE
+
+
+CREATE TABLE ORDER_FORM
+(
+	OrderId varchar(30) PRIMARY KEY,
+	CustomerId varchar (20) NOT NULL FOREIGN KEY REFERENCES CUSTOMER (CustomerId),
+	BikeId varchar (20) NOT NULL FOREIGN KEY REFERENCES BIKE (BikeId),
+	PhoneNo varchar (20) NOT NULL,
+	O_Amount varchar (20)  NOT NULL,
+	O_Paid  varchar (20)  NOT NULL,
+	O_Due  varchar (20)  NOT NULL 
+)
+
+SELECT* FROM ORDER_FORM
+
+SELECT PartnerId, PartnerName, BikeId FROM PARTNER WHERE PARTNER.BikeId IN
+(SELECT PARTNER.BikeId 
+FROM ORDER_FORM INNER JOIN PARTNER 
+ON 
+ORDER_FORM.BikeId = PARTNER.BikeId
+GROUP BY PARTNER.BikeId
+HAVING COUNT(PARTNER.BikeId)>=2)
